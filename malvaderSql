@@ -1,0 +1,243 @@
+-- MySQL Workbench Forward Engineering
+
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
+-- -----------------------------------------------------
+-- Schema bancomalvader
+-- -----------------------------------------------------
+
+-- -----------------------------------------------------
+-- Schema bancomalvader
+-- -----------------------------------------------------
+CREATE SCHEMA IF NOT EXISTS `bancomalvader` DEFAULT CHARACTER SET utf8 ;
+USE `bancomalvader` ;
+
+-- -----------------------------------------------------
+-- Table `bancomalvader`.`relatorio`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `bancomalvader`.`relatorio` (
+  `id_relatorio` INT NOT NULL AUTO_INCREMENT,
+  `tipo_relatorio` VARCHAR(50) NOT NULL,
+  `data_geracao` TIMESTAMP NOT NULL,
+  `conteudo` TEXT NOT NULL,
+  `id_funcionario` INT NOT NULL,
+  PRIMARY KEY (`id_relatorio`),
+  INDEX `id_funcionario_idx` (`id_funcionario` ASC) VISIBLE,
+  CONSTRAINT `id_funcionario`
+    FOREIGN KEY (`id_funcionario`)
+    REFERENCES `bancomalvader`.`funcionario` (`id_funcionario`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `bancomalvader`.`funcionario`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `bancomalvader`.`funcionario` (
+  `id_funcionario` INT NOT NULL AUTO_INCREMENT,
+  `codigo_funcionario` VARCHAR(20) NOT NULL,
+  `cargo` VARCHAR(50) NOT NULL,
+  `id_usuario` INT NOT NULL,
+  `relatorio_id_relatorio` INT NOT NULL,
+  PRIMARY KEY (`id_funcionario`, `relatorio_id_relatorio`),
+  UNIQUE INDEX `codigo_funcionario_UNIQUE` (`codigo_funcionario` ASC) VISIBLE,
+  INDEX `id_usuario_idx` (`id_usuario` ASC) VISIBLE,
+  INDEX `fk_funcionario_relatorio1_idx` (`relatorio_id_relatorio` ASC) VISIBLE,
+  CONSTRAINT `id_usuario`
+    FOREIGN KEY (`id_usuario`)
+    REFERENCES `bancomalvader`.`usuario` (`id_usuario`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_funcionario_relatorio1`
+    FOREIGN KEY (`relatorio_id_relatorio`)
+    REFERENCES `bancomalvader`.`relatorio` (`id_relatorio`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `bancomalvader`.`conta_poupanca`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `bancomalvader`.`conta_poupanca` (
+  `id_conta_poupanca` INT NOT NULL AUTO_INCREMENT,
+  `taxa_rendimento` DECIMAL(5,2) NOT NULL,
+  `conta_fk` INT NOT NULL,
+  PRIMARY KEY (`id_conta_poupanca`),
+  INDEX `id_conta_idx` (`conta_fk` ASC) VISIBLE,
+  CONSTRAINT `conta_fk`
+    FOREIGN KEY (`conta_fk`)
+    REFERENCES `bancomalvader`.`conta` (`id_conta`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `bancomalvader`.`conta_corrente`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `bancomalvader`.`conta_corrente` (
+  `id_conta_corrente` INT NOT NULL AUTO_INCREMENT,
+  `limite` DECIMAL(15,2) NOT NULL,
+  `data_vencimento` DATE NOT NULL,
+  `id_conta` INT NOT NULL,
+  PRIMARY KEY (`id_conta_corrente`),
+  INDEX `id_conta_idx` (`id_conta` ASC) VISIBLE,
+  CONSTRAINT `id_conta`
+    FOREIGN KEY (`id_conta`)
+    REFERENCES `bancomalvader`.`conta` (`id_conta`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `bancomalvader`.`transacao`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `bancomalvader`.`transacao` (
+  `id_transacao` INT NOT NULL AUTO_INCREMENT,
+  `tipo_transacao` ENUM('DEPOSITO', 'SAQUE', 'TRANSFERENCIA') NOT NULL,
+  `valor` DECIMAL(15,2) NOT NULL,
+  `data_hora` TIMESTAMP NOT NULL,
+  `fk_conta_transacao` INT NOT NULL,
+  PRIMARY KEY (`id_transacao`),
+  INDEX `id_conta_idx` (`fk_conta_transacao` ASC) VISIBLE,
+  CONSTRAINT `fk_conta_transacao`
+    FOREIGN KEY (`fk_conta_transacao`)
+    REFERENCES `bancomalvader`.`conta` (`id_conta`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `bancomalvader`.`conta`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `bancomalvader`.`conta` (
+  `id_conta` INT NOT NULL AUTO_INCREMENT,
+  `numero_conta` VARCHAR(20) NOT NULL,
+  `agencia` VARCHAR(10) NOT NULL,
+  `saldo` DECIMAL(15,2) NOT NULL,
+  `tipo_conta` ENUM('POUPANCA', 'CORRENTE') NOT NULL,
+  `id_cliente` INT NOT NULL,
+  `conta_poupanca_id_conta_poupanca` INT NOT NULL,
+  `conta_corrente_id_conta_corrente` INT NOT NULL,
+  `transacao_id_transacao` INT NOT NULL,
+  PRIMARY KEY (`id_conta`, `conta_poupanca_id_conta_poupanca`, `conta_corrente_id_conta_corrente`, `transacao_id_transacao`),
+  INDEX `id_cliente_idx` (`id_cliente` ASC) VISIBLE,
+  INDEX `fk_conta_conta_poupanca1_idx` (`conta_poupanca_id_conta_poupanca` ASC) VISIBLE,
+  INDEX `fk_conta_conta_corrente1_idx` (`conta_corrente_id_conta_corrente` ASC) VISIBLE,
+  INDEX `fk_conta_transacao1_idx` (`transacao_id_transacao` ASC) VISIBLE,
+  CONSTRAINT `id_cliente`
+    FOREIGN KEY (`id_cliente`)
+    REFERENCES `bancomalvader`.`cliente` (`id_cliente`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_conta_conta_poupanca1`
+    FOREIGN KEY (`conta_poupanca_id_conta_poupanca`)
+    REFERENCES `bancomalvader`.`conta_poupanca` (`id_conta_poupanca`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_conta_conta_corrente1`
+    FOREIGN KEY (`conta_corrente_id_conta_corrente`)
+    REFERENCES `bancomalvader`.`conta_corrente` (`id_conta_corrente`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_conta_transacao1`
+    FOREIGN KEY (`transacao_id_transacao`)
+    REFERENCES `bancomalvader`.`transacao` (`id_transacao`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `bancomalvader`.`cliente`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `bancomalvader`.`cliente` (
+  `id_cliente` INT NOT NULL AUTO_INCREMENT,
+  `fk_usuario` INT NOT NULL,
+  `conta_id_conta` INT NOT NULL,
+  `conta_conta_poupanca_id_conta_poupanca` INT NOT NULL,
+  `conta_conta_corrente_id_conta_corrente` INT NOT NULL,
+  PRIMARY KEY (`id_cliente`, `conta_id_conta`, `conta_conta_poupanca_id_conta_poupanca`, `conta_conta_corrente_id_conta_corrente`),
+  INDEX `id_usuario_idx` (`fk_usuario` ASC) VISIBLE,
+  INDEX `fk_cliente_conta1_idx` (`conta_id_conta` ASC, `conta_conta_poupanca_id_conta_poupanca` ASC, `conta_conta_corrente_id_conta_corrente` ASC) VISIBLE,
+  CONSTRAINT `fk_usuario`
+    FOREIGN KEY (`fk_usuario`)
+    REFERENCES `bancomalvader`.`usuario` (`id_usuario`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_cliente_conta1`
+    FOREIGN KEY (`conta_id_conta` , `conta_conta_poupanca_id_conta_poupanca` , `conta_conta_corrente_id_conta_corrente`)
+    REFERENCES `bancomalvader`.`conta` (`id_conta` , `conta_poupanca_id_conta_poupanca` , `conta_corrente_id_conta_corrente`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `bancomalvader`.`endereco`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `bancomalvader`.`endereco` (
+  `id_endereco` INT NOT NULL AUTO_INCREMENT,
+  `cep` VARCHAR(10) NOT NULL,
+  `local` VARCHAR(100) NOT NULL,
+  `numero_casa` INT NOT NULL,
+  `bairro` VARCHAR(50) NOT NULL,
+  `cidade` VARCHAR(50) NOT NULL,
+  `estado` VARCHAR(2) NOT NULL,
+  `usuario_fk` INT NOT NULL,
+  PRIMARY KEY (`id_endereco`),
+  INDEX `id_usuario_idx` (`usuario_fk` ASC) VISIBLE,
+  CONSTRAINT `usuario_fk`
+    FOREIGN KEY (`usuario_fk`)
+    REFERENCES `bancomalvader`.`usuario` (`id_usuario`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `bancomalvader`.`usuario`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `bancomalvader`.`usuario` (
+  `id_usuario` INT NOT NULL AUTO_INCREMENT,
+  `nome` VARCHAR(100) NOT NULL,
+  `cpf` VARCHAR(11) NOT NULL,
+  `data_nascimento` DATE NOT NULL,
+  `telefone` VARCHAR(15) NOT NULL,
+  `tipo_usuario` ENUM('FUNCIONARIO', 'CLIENTE') NOT NULL,
+  `senha` VARCHAR(50) NOT NULL,
+  `funcionario_id_funcionario` INT NOT NULL,
+  `cliente_id_cliente` INT NOT NULL,
+  `endereco_id_endereco` INT NOT NULL,
+  PRIMARY KEY (`id_usuario`, `funcionario_id_funcionario`, `cliente_id_cliente`),
+  UNIQUE INDEX `cpf_UNIQUE` (`cpf` ASC) VISIBLE,
+  INDEX `fk_usuario_funcionario1_idx` (`funcionario_id_funcionario` ASC) VISIBLE,
+  INDEX `fk_usuario_cliente1_idx` (`cliente_id_cliente` ASC) VISIBLE,
+  INDEX `fk_usuario_endereco1_idx` (`endereco_id_endereco` ASC) VISIBLE,
+  CONSTRAINT `fk_usuario_funcionario1`
+    FOREIGN KEY (`funcionario_id_funcionario`)
+    REFERENCES `bancomalvader`.`funcionario` (`id_funcionario`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_usuario_cliente1`
+    FOREIGN KEY (`cliente_id_cliente`)
+    REFERENCES `bancomalvader`.`cliente` (`id_cliente`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_usuario_endereco1`
+    FOREIGN KEY (`endereco_id_endereco`)
+    REFERENCES `bancomalvader`.`endereco` (`id_endereco`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB;
+
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
